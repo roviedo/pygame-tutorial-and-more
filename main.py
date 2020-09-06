@@ -3,6 +3,7 @@ import os
 import time
 import random
 pygame.font.init()
+pygame.mixer.init()
 
 WIDTH, HEIGHT = 750, 750
 
@@ -23,8 +24,25 @@ YELLOW_LASER = pygame.image.load(os.path.join("assets", "pixel_laser_yellow.png"
 #Background
 BG = pygame.transform.scale(pygame.image.load(os.path.join('assets', 'background-black.png')), (WIDTH, HEIGHT))
 
+#Heart item
+HEART_ITEM = pygame.image.load(os.path.join("assets", "heart_8bit.png"))
+
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Tutorial")
+
+class Item:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.item_img = HEART_ITEM
+        self.mask = pygame.mask.from_surface(self.item_img)
+
+    def draw(self, window):
+        window.blit(self.item_img, (self.x, self.y))
+        # pygame.draw.rect(window, (255, 0, 0), (self.x, self.y, 50, 50))
+
+    def move(self, vel):
+        self.y += vel
 
 class Laser:
     def __init__(self, x, y, img):
@@ -154,17 +172,26 @@ def main():
     FPS = 60
     level = 1
     lives = 6
-    player_vel = 5
+    player_vel = 6
 
     enemies = []
     wave_length = 5
     enemy_vel = 1
-    laser_vel = 4
+    player_laser_vel = 8
+    enemy_laser_vel = 3
+
+    items = []
+    item_vel = 2
 
     main_font = pygame.font.SysFont('comicsans', 50)
     lost_font = pygame.font.SysFont('comicsans', 60)
 
+    pygame.mixer.music.load(os.path.join("assets", "house_lo.wav"))
+    pygame.mixer.music.play(-1)
+
     player = Player(300, 650)
+
+    item = Item(200, 100)
 
     clock = pygame.time.Clock()
 
@@ -180,6 +207,11 @@ def main():
         WIN.blit(level_label, (WIDTH - level_label.get_width() - 10, 10))
 
         player.draw(WIN)
+
+        for item in items:
+            item.draw(WIN)
+        # item.draw(WIN)
+        # item_available = False
 
         if lost:
             lost_label = lost_font.render("You lost!", 1, (255, 255, 255))
@@ -207,6 +239,13 @@ def main():
 
         if len(enemies) == 0:
             level += 1
+            if level % 2 == 1:
+                item = Item(
+                    random.randrange(50, WIDTH - 100),
+                    random.randrange(-1500, -100)
+                )
+                items.append(item)
+
             wave_length += 5
             for i in range(wave_length):
                 enemy = Enemy(
@@ -235,7 +274,7 @@ def main():
 
         for enemy in enemies[:]:
             enemy.move(enemy_vel)
-            enemy.move_lasers(laser_vel, player)
+            enemy.move_lasers(enemy_laser_vel, player)
 
             if random.randrange(0, 2*60) == 1:
                 enemy.shoot()
@@ -247,7 +286,17 @@ def main():
                 lives -= 1
                 enemies.remove(enemy)
 
-        player.move_lasers(-laser_vel, enemies)
+        for item in items[:]:
+            item.move(item_vel)
+
+            if collide(item, player):
+                if player.health + 20 >= 100:
+                    player.health = 100
+                else:
+                    player.health += 20
+                items.remove(item)
+
+        player.move_lasers(-player_laser_vel, enemies)
 
 def main_menu():
     title_font = pygame.font.SysFont("comicsans", 70)
@@ -268,4 +317,10 @@ def main_menu():
 
 main_menu()
 
-# up to 51:56
+# Improvements
+# Get items like (shield, health, different laser etc.)
+# Shield thats lasts a few hits
+# More powerful laser
+# Boss fight after a few levels
+# 2 player in same screen
+# 2 player network
