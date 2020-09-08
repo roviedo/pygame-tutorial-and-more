@@ -88,7 +88,6 @@ class Ship:
         self.cool_down_counter = 0
 
     def draw(self, window):
-        # pygame.draw.rect(window, (255, 0, 0), (self.x, self.y, 50, 50))
         window.blit(self.ship_img, (self.x, self.y))
         for laser in self.lasers:
             laser.draw(window)
@@ -272,13 +271,6 @@ def main():
 
         if len(enemies) == 0:
             level += 1
-            # if level % 2 == 1:
-            #     item = Item(
-            #         random.randrange(50, WIDTH - 100),
-            #         random.randrange(-1500, -100),
-            #         random.choice(["weapon1", "heart"])
-            #     )
-            #     items.append(item)
             item = Item(
                 random.randrange(50, WIDTH - 100),
                 random.randrange(-1500, -100),
@@ -362,11 +354,3 @@ def main_menu():
     pygame.quit()
 
 main_menu()
-
-# Improvements
-# Get items like (shield, health, different laser etc.)
-# Shield thats lasts a few hits
-# More powerful laser
-# Boss fight after a few levels
-# 2 player in same screen
-# 2 player network
