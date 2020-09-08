@@ -27,14 +27,26 @@ BG = pygame.transform.scale(pygame.image.load(os.path.join('assets', 'background
 #Heart item
 HEART_ITEM = pygame.image.load(os.path.join("assets", "heart_8bit.png"))
 
+#Weapon 1
+WEAPON_1 = pygame.image.load(os.path.join("assets", "laser_gun.jpeg"))
+
+# Life icon
+LIFE = pygame.image.load(os.path.join("assets", "1upIcon.jpeg"))
+
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Tutorial")
 
 class Item:
-    def __init__(self, x, y):
+    ITEMS = {
+        "heart": HEART_ITEM,
+        "weapon1": WEAPON_1,
+        "life": LIFE
+    }
+    def __init__(self, x, y, itemType):
         self.x = x
         self.y = y
-        self.item_img = HEART_ITEM
+        self.item_img = self.ITEMS[itemType]
+        self.itemType = itemType
         self.mask = pygame.mask.from_surface(self.item_img)
 
     def draw(self, window):
@@ -89,6 +101,11 @@ class Ship:
                 self.lasers.remove(laser)
             elif laser.collision(obj):
                 obj.health -= 10
+                if obj.special_weapon_state > 1:
+                    obj.special_weapon_state -= 1
+                elif obj.special_weapon_state == 1:
+                    obj.special_weapon_state = 0
+                    obj.laser_type = 'default'
                 self.lasers.remove(laser)
 
     def cooldown(self):
@@ -117,6 +134,8 @@ class Player(Ship):
         self.laser_img = YELLOW_LASER
         self.mask = pygame.mask.from_surface(self.ship_img)
         self.max_health = health
+        self.laser_type = 'default'
+        self.special_weapon_state = 0
 
     def move_lasers(self, vel, objs):
         self.cooldown()
@@ -138,6 +157,20 @@ class Player(Ship):
     def healthbar(self, window):
         pygame.draw.rect(window, (255, 0, 0), (self.x, self.y + self.ship_img.get_height() + 10, self.ship_img.get_width(), 10))
         pygame.draw.rect(window, (255, 255, 0), (self.x, self.y + self.ship_img.get_height() + 10, self.ship_img.get_width() * (self.health/self.max_health), 10))
+
+    def shoot(self):
+        if self.cool_down_counter == 0:
+            if self.laser_type == 'triple_laser':
+                laser1 = Laser(self.x - 30, self.y, self.laser_img)
+                laser2 = Laser(self.x, self.y, self.laser_img)
+                laser3 = Laser(self.x + 30, self.y, self.laser_img)
+                self.lasers.append(laser1)
+                self.lasers.append(laser2)
+                self.lasers.append(laser3)
+            else:
+                laser = Laser(self.x, self.y, self.laser_img)
+                self.lasers.append(laser)
+            self.cool_down_counter = 1
 
 class Enemy(Ship):
     COLOR_MAP = {
@@ -191,7 +224,7 @@ def main():
 
     player = Player(300, 650)
 
-    item = Item(200, 100)
+    # item = Item(200, 100)
 
     clock = pygame.time.Clock()
 
@@ -239,12 +272,19 @@ def main():
 
         if len(enemies) == 0:
             level += 1
-            if level % 2 == 1:
-                item = Item(
-                    random.randrange(50, WIDTH - 100),
-                    random.randrange(-1500, -100)
-                )
-                items.append(item)
+            # if level % 2 == 1:
+            #     item = Item(
+            #         random.randrange(50, WIDTH - 100),
+            #         random.randrange(-1500, -100),
+            #         random.choice(["weapon1", "heart"])
+            #     )
+            #     items.append(item)
+            item = Item(
+                random.randrange(50, WIDTH - 100),
+                random.randrange(-1500, -100),
+                random.choice(["weapon1", "heart", "life"])
+            )
+            items.append(item)
 
             wave_length += 5
             for i in range(wave_length):
@@ -290,10 +330,16 @@ def main():
             item.move(item_vel)
 
             if collide(item, player):
-                if player.health + 20 >= 100:
-                    player.health = 100
-                else:
-                    player.health += 20
+                if item.itemType == 'heart':
+                    if player.health + 20 >= 100:
+                        player.health = 100
+                    else:
+                        player.health += 20
+                elif item.itemType == 'life':
+                    lives += 1
+                elif item.itemType == 'weapon1':
+                    player.laser_type = 'triple_laser'
+                    player.special_weapon_state = 3
                 items.remove(item)
 
         player.move_lasers(-player_laser_vel, enemies)
